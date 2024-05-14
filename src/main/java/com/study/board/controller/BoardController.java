@@ -61,6 +61,7 @@ public class BoardController {
 
         model.addAttribute("board", boardService.boardView(id));
 
+
         return "boardmodify";
     }
 
