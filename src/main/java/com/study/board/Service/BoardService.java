@@ -1,5 +1,11 @@
 package com.study.board.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 import com.study.board.entity.Board;
 import com.study.board.repository.BoardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,20 +25,27 @@ public class BoardService {
     private BoardRepository boardRepository;
 
     // 글 작성 처리
-    public void write(Board board, MultipartFile file) throws Exception{
+    public void write(Board board, MultipartFile file) throws Exception {
+        if (file != null && !file.isEmpty()) {
+            String projectPath = System.getProperty("user.dir") + "/src/main/webapp/";
+            UUID uuid = UUID.randomUUID();
+            String fileName = uuid + "_" + file.getOriginalFilename();
+            Path savePath = Paths.get(projectPath, fileName);
 
-        String projectPath = System.getProperty("user.dir") + "\\src\\main\\webapp\\";
+            // 디렉토리 존재 여부 확인 및 생성
+            if (!Files.exists(savePath.getParent())) {
+                Files.createDirectories(savePath.getParent());
+            }
 
-        UUID uuid = UUID.randomUUID();
+            try {
+                Files.copy(file.getInputStream(), savePath, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new Exception("파일 업로드 실패", e);
+            }
 
-        String fileName = uuid + "_" + file.getOriginalFilename();
-
-        File saveFile = new File(projectPath, fileName);
-
-        file.transferTo(saveFile);
-
-        board.setFilename(fileName);
-        board.setFilepath("/webapp/" + fileName);
+            board.setFilename(fileName);
+            board.setFilepath("/webapp/" + fileName);
+        }
 
         boardRepository.save(board);
     }

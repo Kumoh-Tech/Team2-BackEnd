@@ -28,13 +28,17 @@ public class BoardController {
     }
 
     @PostMapping("/board/writepro")
-    public String boardWritePro(Board board, Model model, @RequestParam(name = "file") MultipartFile file) throws Exception{
-        boardService.write(board, file);
-
-        model.addAttribute("message","글 작성이 완료되었습니다");
-        model.addAttribute("searchUrl","/board/list");
-
-        return "message";
+    public String boardWritePro(Board board, Model model, @RequestParam(name = "file", required = false) MultipartFile file) {
+        try {
+            boardService.write(board, file);
+            model.addAttribute("message", "글 작성이 완료되었습니다");
+            model.addAttribute("searchUrl", "/board/list");
+            return "message";
+        } catch (Exception e) {
+            model.addAttribute("message", "글 작성 중 문제가 발생했습니다: " + e.getMessage());
+            model.addAttribute("searchUrl", "/board/write");
+            return "message";
+        }
     }
 
     @GetMapping("/board/list")
