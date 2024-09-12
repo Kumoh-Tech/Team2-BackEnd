@@ -91,15 +91,26 @@ public class BoardController {
         return "boardmodify";
     }
 
-    @PostMapping("/board/update/{id}")
-    public String boardUpdate(@PathVariable("id") Integer id, Board board, @RequestParam(name = "file") MultipartFile file) throws Exception{
+    // 글 수정 처리
+    @PostMapping("/board/update")
+    public String boardUpdate(@RequestParam("id") Integer id, Board board, @RequestParam(name = "file") MultipartFile file) throws Exception{
 
+        // 기존 게시글 조회
         Board boardTemp = boardService.boardView(id);
+
+        // 게시글 정보 수정
         boardTemp.setTitle(board.getTitle());
         boardTemp.setContent(board.getContent());
 
-        boardService.write(boardTemp, file);
+        // 파일이 있는 경우 처리
+        if (file != null && !file.isEmpty()){
+            // 파일 업로드 처리
+            boardService.write(boardTemp, file);
+        }else{
+            // 파일이 없을 경우 처리
+            boardService.write(boardTemp, null);
+        }
 
-        return "redirect:/board/list";
+        return "redirect:/board/view?id=" + boardTemp.getId();
     }
 }

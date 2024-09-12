@@ -63,7 +63,7 @@ public class BoardService {
 
     public Board boardView(Integer id){
 
-        return boardRepository.findById(id).get();
+        return boardRepository.findById(id).orElse(null);
     }
 
     public void boardDelete(Integer id){

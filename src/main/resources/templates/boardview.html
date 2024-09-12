@@ -3,13 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <title>게시글 상세 페이지</title>
+    <!-- Bootstrap CSS 추가 -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
 </head>
 <body>
 
-<h1 th:text="${board.title}">제목입니다.</h1>
-<p th:text="${board.content}">내용이 들어갈 부분</p>
-<a th:href="@{/board/delete(id=${board.id})}">글삭제</a>
-<a th:href="@{${board.filepath}}">첨부파일</a>
-<a th:href="@{/board/modify/{id}(id = ${board.id})}">수정</a>
+<div class="container mt-4">
+    <!-- 게시글 제목 -->
+    <h1 th:text="${board.title}">제목입니다.</h1>
+    <!-- 게시글 내용 -->
+    <p th:text="${board.content}">내용이 들어갈 부분</p>
+    <!-- 첨부파일 다운로드 링크 -->
+    <a th:href="@{${board.filepath}}">첨부파일</a>
+    <!-- 글 수정, 삭제 링크 -->
+    <a th:href="@{/board/modify/{id}(id=${board.id})}">수정</a>
+    <a th:href="@{/board/delete(id=${board.id})}">글삭제</a>
+
+    <!-- 댓글 목록 -->
+    <div class="card mt-4">
+        <div class="card-header">
+            댓글 목록
+        </div>
+        <div class="card-body" id="comments-list">
+            <!-- Thymeleaf를 사용하여 댓글 목록 반복 출력 -->
+            <div th:each="comment : ${comments}" class="card m-2" th:id="'comments-' + ${comment.id}">
+                <div class="card-header">
+                    <span th:text="${comment.nickname}">닉네임</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
+                            th:data-comment-id="${comment.id}">
+                        삭제
+                    </button>
+                </div>
+                <div class="card-body">
+                    <span th:text="${comment.body}">댓글 내용</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 댓글 작성 폼 -->
+    <div class="card mt-4">
+        <div class="card-body" id="comments-new">
+            <form>
+                <!-- 닉네임 입력 -->
+                <div class="mb-3">
+                    <label for="new-comment-nickname" class="form-label">닉네임</label>
+                    <input type="text" class="form-control" id="new-comment-nickname">
+                </div>
+                <!-- 댓글 본문 입력 -->
+                <div class="mb-3">
+                    <label for="new-comment-body" class="form-label">댓글 내용</label>
+                    <textarea class="form-control" rows="3" id="new-comment-body"></textarea>
+                </div>
+                <!-- 히든 인풋 -->
+                <input type="hidden" id="new-comment-board-id" th:value="${board.id}">
+                <!-- 전송 버튼 -->
+                <button type="button" class="btn btn-primary" id="comment-create-btn">댓글 작성</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 댓글 작성 스크립트 -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const commentCreateBtn = document.querySelector("#comment-create-btn");
+
+        commentCreateBtn.addEventListener("click", function() {
+            const comment = {
+                nickname: document.querySelector("#new-comment-nickname").value,
+                body: document.querySelector("#new-comment-body").value,
+                boardId: document.querySelector("#new-comment-board-id").value
+            };
+
+            fetch(`/api/boards/${comment.boardId}/comments`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(comment)
+            }).then(response => response.json())
+              .then(data => {
+                  if (data) {
+                      alert("댓글이 등록되었습니다!");
+                      addCommentToList(data);
+                      document.querySelector("#new-comment-nickname").value = '';
+                      document.querySelector("#new-comment-body").value = '';
+                  } else {
+                      alert("댓글 등록 실패..");
+                  }
+              });
+        });
+
+        function addCommentToList(comment) {
+            const commentsList = document.querySelector("#comments-list");
+
+            const commentDiv = document.createElement("div");
+            commentDiv.classList.add("card", "m-2");
+            commentDiv.id = `comments-${comment.id}`;
+
+            commentDiv.innerHTML = `
+                <div class="card-header">
+                    ${comment.nickname}
+                    <button type="button" class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="modal" data-bs-target="#comment-edit-modal"
+                            data-bs-id="${comment.id}"
+                            data-bs-nickname="${comment.nickname}"
+                            data-bs-body="${comment.body}"
+                            data-bs-article-id="${comment.boardId}">
+                        수정
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
+                            data-comment-id="${comment.id}">
+                        삭제
+                    </button>
+                </div>
+                <div class="card-body">
+                    ${comment.body}
+                </div>
+            `;
+
+            commentsList.appendChild(commentDiv);
+        }
+
+        document.querySelector("#comments-list").addEventListener("click", function(event) {
+            if (event.target.classList.contains("delete-btn")) {
+                const commentId = event.target.getAttribute("data-comment-id");
+
+                fetch(`/api/comments/${commentId}`, {
+                    method: "DELETE"
+                }).then(response => {
+                    if (response.ok) {
+                        document.querySelector(`#comments-${commentId}`).remove();
+                        alert("댓글이 삭제되었습니다.");
+                    } else {
+                        alert("댓글 삭제 실패.");
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<!-- Bootstrap JS 및 의존성 추가 -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 </body>
 </html>
