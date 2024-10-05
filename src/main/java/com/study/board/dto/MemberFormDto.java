@@ -23,6 +23,6 @@ public class MemberFormDto {
     private String password;
 
     @NotEmpty(message = "학과는 필수 입력 값입니다.")
-    private String Major;
+    private String major;
 
 }
